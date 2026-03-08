@@ -12,13 +12,13 @@
       <div class="auth-logo">Volnagramm</div>
       <div class="auth-subtitle">Вход или регистрация</div>
 
-      <input id="username" type="text" placeholder="username" />
+      <input id="username" type="text" placeholder="username" maxlength="20" />
       <input id="displayName" type="text" placeholder="display name (для регистрации)" />
       <input id="password" type="password" placeholder="password" />
 
       <div class="auth-actions">
-        <button id="loginBtn">Войти</button>
-        <button id="registerBtn" class="secondary">Регистрация</button>
+        <button id="loginBtn" type="button">Войти</button>
+        <button id="registerBtn" type="button" class="secondary">Регистрация</button>
       </div>
 
       <div class="demo-note">Демо: ocean / volna123</div>
@@ -36,7 +36,7 @@
         <div id="globalStatus" class="global-status">Подключение...</div>
       </div>
 
-      <div id="meBox" class="me-box hidden"></div>
+      <div id="meBox" class="me-box"></div>
 
       <div class="sidebar-block">
         <div class="block-title">Поиск пользователей</div>
@@ -48,7 +48,7 @@
         <div class="block-title">Создать группу</div>
         <input id="groupTitle" type="text" placeholder="название группы" />
         <input id="groupMembers" type="text" placeholder="id участников через запятую" />
-        <button id="createGroupBtn">Создать группу</button>
+        <button id="createGroupBtn" type="button">Создать группу</button>
       </div>
 
       <div class="sidebar-block chats-block">
@@ -57,7 +57,7 @@
       </div>
 
       <div class="sidebar-bottom">
-        <button id="logoutBtn" class="danger">Выйти</button>
+        <button id="logoutBtn" type="button" class="danger">Выйти</button>
       </div>
     </aside>
 
@@ -70,11 +70,6 @@
             <div id="activeChatSubtitle" class="chat-subtitle">Сообщения будут здесь</div>
           </div>
         </div>
-
-        <div class="chat-header-actions">
-          <button id="audioCallBtn" class="icon-btn hidden" title="Аудиозвонок">📞</button>
-          <button id="videoCallBtn" class="icon-btn hidden" title="Видеозвонок">🎥</button>
-        </div>
       </div>
 
       <div id="messages" class="messages">
@@ -82,27 +77,10 @@
       </div>
 
       <div class="chat-composer">
-        <label for="fileInput" class="attach-btn">📎</label>
-        <input id="fileInput" type="file" class="hidden" />
         <input id="messageInput" type="text" placeholder="Написать сообщение..." />
-        <button id="sendBtn">Отправить</button>
+        <button id="sendBtn" type="button">Отправить</button>
       </div>
     </main>
-  </div>
-
-  <div id="callModal" class="call-modal hidden">
-    <div class="call-card">
-      <div id="callTitle" class="call-title">Звонок</div>
-      <div id="callStatus" class="call-status">Подключение...</div>
-
-      <div class="call-actions">
-        <button id="acceptCallBtn">Принять</button>
-        <button id="rejectCallBtn" class="danger">Сбросить</button>
-      </div>
-
-      <video id="remoteVideo" autoplay playsinline class="call-video hidden"></video>
-      <video id="localVideo" autoplay muted playsinline class="call-video small hidden"></video>
-    </div>
   </div>
 
   <script src="./script.js"></script>
