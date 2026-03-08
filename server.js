@@ -1,7 +1,4 @@
-const API_BASE =
-  location.protocol === "file:"
-    ? "https://volnagramm.onrender.com"
-    : "";
+const API_BASE = "https://volnagramm.onrender.com";
 
 const state = {
   token: localStorage.getItem("volnagramm_token") || "",
@@ -9,8 +6,6 @@ const state = {
   chats: [],
   activeChatId: null,
   stream: null,
-  healthTimer: null,
-  searchTimer: null,
 };
 
 const el = {
@@ -25,11 +20,6 @@ const el = {
   authError: document.getElementById("authError"),
   globalStatus: document.getElementById("globalStatus"),
   meBox: document.getElementById("meBox"),
-  userSearch: document.getElementById("userSearch"),
-  userResults: document.getElementById("userResults"),
-  groupTitle: document.getElementById("groupTitle"),
-  groupMembers: document.getElementById("groupMembers"),
-  createGroupBtn: document.getElementById("createGroupBtn"),
   chatsList: document.getElementById("chatsList"),
   activeChatTitle: document.getElementById("activeChatTitle"),
   activeChatSubtitle: document.getElementById("activeChatSubtitle"),
@@ -37,9 +27,11 @@ const el = {
   messages: document.getElementById("messages"),
   messageInput: document.getElementById("messageInput"),
   sendBtn: document.getElementById("sendBtn"),
-  fileInput: document.getElementById("fileInput"),
-  audioCallBtn: document.getElementById("audioCallBtn"),
-  videoCallBtn: document.getElementById("videoCallBtn"),
+  userSearch: document.getElementById("userSearch"),
+  userResults: document.getElementById("userResults"),
+  groupTitle: document.getElementById("groupTitle"),
+  groupMembers: document.getElementById("groupMembers"),
+  createGroupBtn: document.getElementById("createGroupBtn"),
 };
 
 function escapeHtml(value) {
@@ -51,52 +43,12 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function setStatus(text) {
+  el.globalStatus.textContent = text;
+}
+
 function setAuthError(text = "") {
-  if (el.authError) el.authError.textContent = text;
-}
-
-function setGlobalStatus(text) {
-  if (el.globalStatus) el.globalStatus.textContent = text;
-}
-
-function getAuthHeaders(isJson = true) {
-  const headers = {};
-  if (isJson) headers["Content-Type"] = "application/json";
-  if (state.token) headers.Authorization = `Bearer ${state.token}`;
-  return headers;
-}
-
-async function api(path, options = {}) {
-  const url = `${API_BASE}${path}`;
-  const res = await fetch(url, options);
-  let data = null;
-
-  try {
-    data = await res.json();
-  } catch {
-    data = null;
-  }
-
-  if (!res.ok) {
-    const msg = data?.error || `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
-
-  return data;
-}
-
-function isValidUsername(username) {
-  return /^[a-zA-Z0-9_]{3,20}$/.test(username);
-}
-
-function formatTime(dateString) {
-  if (!dateString) return "";
-  const d = new Date(dateString);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  el.authError.textContent = text;
 }
 
 function showAuth() {
@@ -107,6 +59,30 @@ function showAuth() {
 function showApp() {
   el.authScreen.classList.add("hidden");
   el.appScreen.classList.remove("hidden");
+}
+
+function headers(json = true) {
+  const h = {};
+  if (json) h["Content-Type"] = "application/json";
+  if (state.token) h["Authorization"] = `Bearer ${state.token}`;
+  return h;
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, options);
+  const text = await res.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
+
+  if (!res.ok) {
+    throw new Error(data.error || `HTTP ${res.status}`);
+  }
+
+  return data;
 }
 
 function renderMe() {
@@ -121,46 +97,21 @@ function renderMe() {
   `;
 }
 
-function getChatSubtitle(chat) {
-  if (chat?.subtitle) return chat.subtitle;
-  if (chat?.peer?.status_text) return chat.peer.status_text;
-  if (chat?.is_group) return "группа";
-  return "личный чат";
-}
-
-function getChatTitle(chat) {
-  if (chat?.peer?.display_name) return chat.peer.display_name;
-  return chat?.title || "Чат";
-}
-
-function getAvatarLetter(chat) {
-  const title = getChatTitle(chat);
-  return title ? title.charAt(0).toUpperCase() : "V";
-}
-
 function renderChats() {
   if (!state.chats.length) {
     el.chatsList.innerHTML = `<div class="empty-chat">Чатов пока нет</div>`;
     return;
   }
 
-  el.chatsList.innerHTML = state.chats
-    .map((chat) => {
-      const active = Number(chat.id) === Number(state.activeChatId) ? "active" : "";
-      return `
-        <div class="chat-item ${active}" data-chat-id="${chat.id}">
-          <strong>${escapeHtml(getChatTitle(chat))}</strong>
-          <span>${escapeHtml(chat.last_message || getChatSubtitle(chat))}</span>
-        </div>
-      `;
-    })
-    .join("");
+  el.chatsList.innerHTML = state.chats.map(chat => `
+    <div class="chat-item ${Number(chat.id) === Number(state.activeChatId) ? "active" : ""}" data-id="${chat.id}">
+      <strong>${escapeHtml(chat.title || "Чат")}</strong>
+      <span>${escapeHtml(chat.last_message || chat.subtitle || "")}</span>
+    </div>
+  `).join("");
 
-  [...el.chatsList.querySelectorAll(".chat-item")].forEach((item) => {
-    item.addEventListener("click", () => {
-      const chatId = Number(item.dataset.chatId);
-      openChat(chatId);
-    });
+  document.querySelectorAll(".chat-item").forEach(node => {
+    node.addEventListener("click", () => openChat(Number(node.dataset.id)));
   });
 }
 
@@ -170,280 +121,77 @@ function renderMessages(messages) {
     return;
   }
 
-  el.messages.innerHTML = messages
-    .map((msg) => {
-      const mine = Number(msg.sender_id) === Number(state.me?.id);
-      return `
-        <div class="message ${mine ? "me" : "other"}">
-          <div class="meta">
-            ${escapeHtml(msg.sender_display_name || msg.sender_username || "")}
-            · ${escapeHtml(formatTime(msg.created_at))}
-          </div>
-          <div>${escapeHtml(msg.text || "")}</div>
-        </div>
-      `;
-    })
-    .join("");
+  el.messages.innerHTML = messages.map(msg => {
+    const mine = Number(msg.sender_id) === Number(state.me?.id);
+    return `
+      <div class="message ${mine ? "me" : "other"}">
+        <div class="meta">${escapeHtml(msg.sender_display_name || msg.sender_username || "")}</div>
+        <div>${escapeHtml(msg.text || "")}</div>
+      </div>
+    `;
+  }).join("");
 
   el.messages.scrollTop = el.messages.scrollHeight;
 }
 
 async function loadChats() {
-  try {
-    const data = await api("/api/chats", {
-      headers: getAuthHeaders(),
-    });
-    state.chats = data.chats || [];
-    renderChats();
-
-    if (state.activeChatId) {
-      const stillExists = state.chats.find((c) => Number(c.id) === Number(state.activeChatId));
-      if (!stillExists) {
-        state.activeChatId = null;
-        el.activeChatTitle.textContent = "Выбери чат";
-        el.activeChatSubtitle.textContent = "Сообщения будут здесь";
-        el.messages.innerHTML = `<div class="empty-chat">Открой чат слева или найди пользователя.</div>`;
-      }
-    }
-  } catch (err) {
-    console.error("loadChats error", err);
-  }
+  const data = await api("/api/chats", {
+    headers: headers(false)
+  });
+  state.chats = data.chats || [];
+  renderChats();
 }
 
 async function openChat(chatId) {
-  state.activeChatId = Number(chatId);
-
-  const chat = state.chats.find((c) => Number(c.id) === Number(chatId));
-  if (chat) {
-    el.activeChatTitle.textContent = getChatTitle(chat);
-    el.activeChatSubtitle.textContent = getChatSubtitle(chat);
-    el.chatAvatar.textContent = getAvatarLetter(chat);
-  }
-
+  state.activeChatId = chatId;
   renderChats();
 
-  try {
-    const meta = await api(`/api/chats/${chatId}`, {
-      headers: getAuthHeaders(),
-    });
+  const meta = await api(`/api/chats/${chatId}`, {
+    headers: headers(false)
+  });
 
-    if (meta?.chat) {
-      const idx = state.chats.findIndex((c) => Number(c.id) === Number(chatId));
-      if (idx >= 0) {
-        state.chats[idx] = { ...state.chats[idx], ...meta.chat };
-      }
-      el.activeChatTitle.textContent = getChatTitle(meta.chat);
-      el.activeChatSubtitle.textContent = getChatSubtitle(meta.chat);
-      el.chatAvatar.textContent = getAvatarLetter(meta.chat);
-      renderChats();
-    }
-  } catch (err) {
-    console.error("chat meta error", err);
-  }
+  const chat = meta.chat;
+  el.activeChatTitle.textContent = chat.title || "Чат";
+  el.activeChatSubtitle.textContent = chat.subtitle || "личный чат";
+  el.chatAvatar.textContent = (chat.title || "V").charAt(0).toUpperCase();
 
-  try {
-    const data = await api(`/api/chats/${chatId}/messages`, {
-      headers: getAuthHeaders(),
-    });
-    renderMessages(data.messages || []);
-  } catch (err) {
-    console.error("messages error", err);
-    el.messages.innerHTML = `<div class="empty-chat">Не удалось загрузить сообщения</div>`;
-  }
+  const msgs = await api(`/api/chats/${chatId}/messages`, {
+    headers: headers(false)
+  });
+
+  renderMessages(msgs.messages || []);
 }
 
 async function sendMessage() {
-  if (!state.activeChatId) return;
   const text = el.messageInput.value.trim();
-  if (!text) return;
+  if (!state.activeChatId || !text) return;
 
-  el.sendBtn.disabled = true;
-  try {
-    await api(`/api/chats/${state.activeChatId}/messages`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ text }),
-    });
-    el.messageInput.value = "";
-    await openChat(state.activeChatId);
-    await loadChats();
-  } catch (err) {
-    alert(err.message || "Ошибка отправки");
-  } finally {
-    el.sendBtn.disabled = false;
-  }
-}
-
-async function searchUsers() {
-  const q = el.userSearch.value.trim();
-  if (!q) {
-    el.userResults.innerHTML = "";
-    return;
-  }
-
-  try {
-    const data = await api(`/api/users/search?q=${encodeURIComponent(q)}`, {
-      headers: getAuthHeaders(false),
-    });
-
-    const users = data.users || [];
-    if (!users.length) {
-      el.userResults.innerHTML = `<div class="empty-chat">Ничего не найдено</div>`;
-      return;
-    }
-
-    el.userResults.innerHTML = users
-      .map(
-        (user) => `
-          <div class="search-user">
-            <div class="name">
-              <strong>${escapeHtml(user.display_name || user.username)}</strong>
-              <span>@${escapeHtml(user.username)} · ${escapeHtml(user.status_text || "был недавно")}</span>
-            </div>
-            <button type="button" data-user-id="${user.id}">Чат</button>
-          </div>
-        `
-      )
-      .join("");
-
-    [...el.userResults.querySelectorAll("button[data-user-id]")].forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const userId = Number(btn.dataset.userId);
-        try {
-          const data = await api("/api/chats/direct", {
-            method: "POST",
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId }),
-          });
-          await loadChats();
-          if (data?.chat?.id) {
-            await openChat(data.chat.id);
-          }
-        } catch (err) {
-          alert(err.message || "Не удалось создать чат");
-        }
-      });
-    });
-  } catch (err) {
-    console.error("search error", err);
-  }
-}
-
-async function createGroup() {
-  const title = el.groupTitle.value.trim();
-  const memberIds = el.groupMembers.value
-    .split(",")
-    .map((v) => Number(v.trim()))
-    .filter(Boolean);
-
-  if (!title) {
-    alert("Введи название группы");
-    return;
-  }
-
-  try {
-    const data = await api("/api/chats/group", {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify({ title, memberIds }),
-    });
-
-    el.groupTitle.value = "";
-    el.groupMembers.value = "";
-    await loadChats();
-
-    if (data?.chat?.id) {
-      await openChat(data.chat.id);
-    }
-  } catch (err) {
-    alert(err.message || "Не удалось создать группу");
-  }
-}
-
-function connectStream() {
-  if (!state.token) return;
-
-  if (state.stream) {
-    state.stream.close();
-    state.stream = null;
-  }
-
-  const streamUrl = `${API_BASE}/api/stream?token=${encodeURIComponent(state.token)}`;
-  const es = new EventSource(streamUrl);
-  state.stream = es;
-
-  es.addEventListener("ready", () => {
-    setGlobalStatus("Подключено к серверу");
+  await api(`/api/chats/${state.activeChatId}/messages`, {
+    method: "POST",
+    headers: headers(true),
+    body: JSON.stringify({ text })
   });
 
-  es.addEventListener("ping", () => {
-    if (navigator.onLine) {
-      setGlobalStatus("Подключено к серверу");
-    }
-  });
-
-  es.addEventListener("message:new", async (event) => {
-    try {
-      const payload = JSON.parse(event.data);
-      if (Number(payload?.message?.chat_id) === Number(state.activeChatId)) {
-        await openChat(state.activeChatId);
-      }
-      await loadChats();
-    } catch (err) {
-      console.error(err);
-    }
-  });
-
-  es.addEventListener("chat:new", async () => {
-    await loadChats();
-  });
-
-  es.onerror = () => {
-    if (!navigator.onLine) {
-      setGlobalStatus("Нет интернета");
-    } else {
-      setGlobalStatus("Проблема с сервером");
-    }
-  };
-}
-
-async function checkServerStatus() {
-  if (!navigator.onLine) {
-    setGlobalStatus("Нет интернета");
-    return;
-  }
-
-  try {
-    setGlobalStatus("Обновление...");
-    const res = await fetch(`${API_BASE}/health`, { cache: "no-store" });
-    if (res.ok) {
-      setGlobalStatus(state.token ? "Подключено к серверу" : "Сервер доступен");
-    } else {
-      setGlobalStatus("Проблема с сервером");
-    }
-  } catch {
-    setGlobalStatus("Проблема с сервером");
-  }
+  el.messageInput.value = "";
+  await openChat(state.activeChatId);
+  await loadChats();
 }
 
 async function login() {
   setAuthError("");
-
   const username = el.username.value.trim();
   const password = el.password.value;
 
   if (!username || !password) {
-    setAuthError("Заполни username и password");
+    setAuthError("Введи username и password");
     return;
   }
-
-  el.loginBtn.disabled = true;
 
   try {
     const data = await api("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password })
     });
 
     state.token = data.token;
@@ -454,43 +202,33 @@ async function login() {
     renderMe();
     await loadChats();
     connectStream();
-    await checkServerStatus();
+    setStatus("Подключено к серверу");
   } catch (err) {
     setAuthError(err.message || "Ошибка входа");
-  } finally {
-    el.loginBtn.disabled = false;
   }
 }
 
 async function register() {
   setAuthError("");
-
   const username = el.username.value.trim();
   const displayName = el.displayName.value.trim();
   const password = el.password.value;
 
   if (!username || !displayName || !password) {
-    setAuthError("Заполни username, display name и password");
+    setAuthError("Заполни все поля");
     return;
   }
 
-  if (!isValidUsername(username)) {
-    setAuthError("Username: 3-20 символов, только английские буквы, цифры и _");
+  if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+    setAuthError("Username: 3-20 символов, латиница, цифры и _");
     return;
   }
-
-  if (password.length < 4) {
-    setAuthError("Пароль должен быть не короче 4 символов");
-    return;
-  }
-
-  el.registerBtn.disabled = true;
 
   try {
     const data = await api("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, displayName }),
+      body: JSON.stringify({ username, password, displayName })
     });
 
     state.token = data.token;
@@ -501,38 +239,32 @@ async function register() {
     renderMe();
     await loadChats();
     connectStream();
-    await checkServerStatus();
+    setStatus("Подключено к серверу");
   } catch (err) {
     setAuthError(err.message || "Ошибка регистрации");
-  } finally {
-    el.registerBtn.disabled = false;
   }
 }
 
 async function restoreSession() {
   if (!state.token) {
     showAuth();
-    await checkServerStatus();
     return;
   }
 
   try {
     const data = await api("/api/me", {
-      headers: getAuthHeaders(false),
+      headers: headers(false)
     });
-
     state.me = data.user;
     showApp();
     renderMe();
     await loadChats();
     connectStream();
-    await checkServerStatus();
+    setStatus("Подключено к серверу");
   } catch {
     localStorage.removeItem("volnagramm_token");
     state.token = "";
-    state.me = null;
     showAuth();
-    await checkServerStatus();
   }
 }
 
@@ -551,18 +283,114 @@ function logout() {
   el.username.value = "";
   el.displayName.value = "";
   el.password.value = "";
-  el.userSearch.value = "";
-  el.userResults.innerHTML = "";
   el.chatsList.innerHTML = "";
   el.messages.innerHTML = `<div class="empty-chat">Открой чат слева или найди пользователя.</div>`;
   el.activeChatTitle.textContent = "Выбери чат";
   el.activeChatSubtitle.textContent = "Сообщения будут здесь";
-
   showAuth();
-  checkServerStatus();
+  setStatus("Сервер доступен");
 }
 
-function bindEvents() {
+function connectStream() {
+  if (!state.token) return;
+  if (state.stream) state.stream.close();
+
+  const es = new EventSource(`${API_BASE}/api/stream?token=${encodeURIComponent(state.token)}`);
+  state.stream = es;
+
+  es.addEventListener("ready", () => {
+    setStatus("Подключено к серверу");
+  });
+
+  es.addEventListener("ping", () => {
+    setStatus("Подключено к серверу");
+  });
+
+  es.addEventListener("message:new", async () => {
+    await loadChats();
+    if (state.activeChatId) await openChat(state.activeChatId);
+  });
+
+  es.addEventListener("chat:new", async () => {
+    await loadChats();
+  });
+
+  es.onerror = () => {
+    setStatus(navigator.onLine ? "Проблема с сервером" : "Нет интернета");
+  };
+}
+
+async function searchUsers() {
+  const q = el.userSearch.value.trim();
+  if (!q) {
+    el.userResults.innerHTML = "";
+    return;
+  }
+
+  const data = await api(`/api/users/search?q=${encodeURIComponent(q)}`, {
+    headers: headers(false)
+  });
+
+  const users = data.users || [];
+  el.userResults.innerHTML = users.map(user => `
+    <div class="search-user">
+      <div class="name">
+        <strong>${escapeHtml(user.display_name || user.username)}</strong>
+        <span>@${escapeHtml(user.username)}</span>
+      </div>
+      <button type="button" data-user-id="${user.id}">Чат</button>
+    </div>
+  `).join("");
+
+  el.userResults.querySelectorAll("button[data-user-id]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = Number(btn.dataset.userId);
+      const data = await api("/api/chats/direct", {
+        method: "POST",
+        headers: headers(true),
+        body: JSON.stringify({ userId })
+      });
+      await loadChats();
+      if (data.chat?.id) await openChat(data.chat.id);
+    });
+  });
+}
+
+async function createGroup() {
+  const title = el.groupTitle.value.trim();
+  const memberIds = el.groupMembers.value
+    .split(",")
+    .map(v => Number(v.trim()))
+    .filter(Boolean);
+
+  if (!title) return;
+
+  const data = await api("/api/chats/group", {
+    method: "POST",
+    headers: headers(true),
+    body: JSON.stringify({ title, memberIds })
+  });
+
+  el.groupTitle.value = "";
+  el.groupMembers.value = "";
+  await loadChats();
+  if (data.chat?.id) await openChat(data.chat.id);
+}
+
+async function pingHealth() {
+  try {
+    const res = await fetch(`${API_BASE}/health`, { cache: "no-store" });
+    if (res.ok) {
+      setStatus(state.token ? "Подключено к серверу" : "Сервер доступен");
+    } else {
+      setStatus("Проблема с сервером");
+    }
+  } catch {
+    setStatus(navigator.onLine ? "Проблема с сервером" : "Нет интернета");
+  }
+}
+
+function bind() {
   el.loginBtn.addEventListener("click", login);
   el.registerBtn.addEventListener("click", register);
   el.logoutBtn.addEventListener("click", logout);
@@ -578,20 +406,17 @@ function bindEvents() {
   });
 
   el.userSearch.addEventListener("input", () => {
-    clearTimeout(state.searchTimer);
-    state.searchTimer = setTimeout(searchUsers, 300);
+    searchUsers().catch(console.error);
   });
 
-  window.addEventListener("online", checkServerStatus);
-  window.addEventListener("offline", checkServerStatus);
+  window.addEventListener("online", pingHealth);
+  window.addEventListener("offline", pingHealth);
 }
 
 async function init() {
-  bindEvents();
+  bind();
+  await pingHealth();
   await restoreSession();
-
-  if (state.healthTimer) clearInterval(state.healthTimer);
-  state.healthTimer = setInterval(checkServerStatus, 15000);
 }
 
-init();
+init().catch(console.error);
