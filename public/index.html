@@ -9,153 +9,99 @@
 <body>
   <div id="authScreen" class="auth-screen">
     <div class="auth-card">
-      <div class="auth-brand">
-        <div class="auth-logo">V</div>
-        <div>
-          <h1>Volnagramm</h1>
-          <p>войти или зарегистрироваться</p>
-        </div>
+      <div class="auth-logo">Volnagramm</div>
+      <div class="auth-subtitle">Вход или регистрация</div>
+
+      <input id="username" type="text" placeholder="username" />
+      <input id="displayName" type="text" placeholder="display name (для регистрации)" />
+      <input id="password" type="password" placeholder="password" />
+
+      <div class="auth-actions">
+        <button id="loginBtn">Войти</button>
+        <button id="registerBtn" class="secondary">Регистрация</button>
       </div>
 
-      <div class="status-row">
-        <div id="internetStatus" class="status-chip neutral">Проверка сети…</div>
-        <div id="serverStatusAuth" class="status-chip neutral">Проверка сервера…</div>
-      </div>
-
-      <div class="auth-tabs">
-        <button id="showLoginTab" class="tab-btn active" type="button">Вход</button>
-        <button id="showRegisterTab" class="tab-btn" type="button">Регистрация</button>
-      </div>
-
-      <form id="loginForm" class="auth-form">
-        <label>
-          <span>Username</span>
-          <input id="loginUsername" autocomplete="username" placeholder="например ocean" />
-        </label>
-        <label>
-          <span>Пароль</span>
-          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="пароль" />
-        </label>
-        <button id="loginBtn" class="primary-btn" type="submit">Войти</button>
-      </form>
-
-      <form id="registerForm" class="auth-form hidden">
-        <label>
-          <span>Username</span>
-          <input id="registerUsername" autocomplete="username" placeholder="только a-z, 0-9 и _" />
-        </label>
-        <label>
-          <span>Имя</span>
-          <input id="registerDisplayName" autocomplete="nickname" placeholder="как тебя будут видеть" />
-        </label>
-        <label>
-          <span>Пароль</span>
-          <input id="registerPassword" type="password" autocomplete="new-password" placeholder="не менее 6 символов" />
-        </label>
-        <button id="registerBtn" class="primary-btn" type="submit">Создать аккаунт</button>
-      </form>
-
-      <div id="authError" class="auth-error hidden"></div>
-      <div class="demo-box">
-        <div>Демо-вход</div>
-        <strong>ocean / volna123</strong>
-      </div>
+      <div class="demo-note">Демо: ocean / volna123</div>
+      <div id="authError" class="auth-error"></div>
     </div>
   </div>
 
-  <div id="appShell" class="app-shell hidden">
+  <div id="appScreen" class="app-shell hidden">
     <aside class="sidebar">
       <div class="sidebar-top">
-        <div class="mini-brand">
-          <div class="mini-logo">V</div>
-          <div>
-            <strong>Volnagramm</strong>
-            <div class="muted small">похоже на телеграм, но твоё</div>
-          </div>
+        <div class="brand-wrap">
+          <div class="brand-title">Volnagramm</div>
+          <div class="brand-subtitle">secure messenger</div>
         </div>
-        <button id="logoutBtn" class="icon-btn" type="button" title="Выйти">⎋</button>
+        <div id="globalStatus" class="global-status">Подключение...</div>
       </div>
 
-      <div class="panel me-panel">
-        <div class="me-main">
-          <div class="avatar" id="meAvatar">V</div>
-          <div>
-            <div class="me-name" id="meName">—</div>
-            <div class="muted" id="meUsername">@—</div>
-          </div>
-        </div>
-        <div class="status-stack">
-          <div id="internetStatusApp" class="status-chip neutral">Сеть…</div>
-          <div id="serverStatusApp" class="status-chip neutral">Сервер…</div>
-          <div id="syncStatus" class="status-line">Ожидание</div>
-        </div>
+      <div id="meBox" class="me-box hidden"></div>
+
+      <div class="sidebar-block">
+        <div class="block-title">Поиск пользователей</div>
+        <input id="userSearch" type="text" placeholder="найти пользователя" />
+        <div id="userResults" class="user-results"></div>
       </div>
 
-      <div class="panel search-panel">
-        <div class="panel-title">Поиск пользователей</div>
-        <input id="searchInput" placeholder="username или имя" />
-        <div id="searchResults" class="result-list"></div>
+      <div class="sidebar-block">
+        <div class="block-title">Создать группу</div>
+        <input id="groupTitle" type="text" placeholder="название группы" />
+        <input id="groupMembers" type="text" placeholder="id участников через запятую" />
+        <button id="createGroupBtn">Создать группу</button>
       </div>
 
-      <div class="panel group-panel">
-        <div class="panel-title">Новая группа</div>
-        <input id="groupTitle" placeholder="Название группы" />
-        <input id="groupMemberIds" placeholder="ID участников через запятую" />
-        <button id="createGroupBtn" class="secondary-btn" type="button">Создать группу</button>
+      <div class="sidebar-block chats-block">
+        <div class="block-title">Чаты</div>
+        <div id="chatsList" class="chat-list"></div>
       </div>
 
-      <div class="chat-list-wrap">
-        <div class="chat-list-header">Чаты</div>
-        <div id="chatList" class="chat-list"></div>
+      <div class="sidebar-bottom">
+        <button id="logoutBtn" class="danger">Выйти</button>
       </div>
     </aside>
 
-    <main class="chat-area">
-      <header class="chat-header">
-        <div>
-          <div id="chatTitle" class="chat-title">Выбери чат</div>
-          <div id="chatSubtitle" class="chat-subtitle">После входа здесь появятся переписки</div>
+    <main class="chat-screen">
+      <div class="chat-header">
+        <div class="chat-userbox">
+          <div id="chatAvatar" class="chat-avatar">V</div>
+          <div class="chat-head-meta">
+            <div id="activeChatTitle" class="chat-title">Выбери чат</div>
+            <div id="activeChatSubtitle" class="chat-subtitle">Сообщения будут здесь</div>
+          </div>
         </div>
-        <div class="header-actions">
-          <div id="headerStatus" class="status-chip neutral">Нет подключения</div>
-          <button id="audioCallBtn" class="icon-btn hidden" type="button" title="Аудиозвонок">📞</button>
-          <button id="videoCallBtn" class="icon-btn hidden" type="button" title="Видеозвонок">🎥</button>
-        </div>
-      </header>
 
-      <section id="messages" class="messages">
-        <div class="empty-state">
-          <div class="empty-icon">✈</div>
-          <h2>Добро пожаловать в Volnagramm</h2>
-          <p>Найди пользователя слева или создай группу, чтобы начать общение.</p>
+        <div class="chat-header-actions">
+          <button id="audioCallBtn" class="icon-btn hidden" title="Аудиозвонок">📞</button>
+          <button id="videoCallBtn" class="icon-btn hidden" title="Видеозвонок">🎥</button>
         </div>
-      </section>
+      </div>
 
-      <form id="messageForm" class="composer hidden">
-        <label class="attach-btn" title="Отправить файл">
-          <input id="fileInput" type="file" hidden />
-          📎
-        </label>
-        <input id="messageInput" placeholder="Напиши сообщение" autocomplete="off" />
-        <button id="sendBtn" class="primary-btn" type="submit">Отправить</button>
-      </form>
+      <div id="messages" class="messages">
+        <div class="empty-chat">Открой чат слева или найди пользователя.</div>
+      </div>
+
+      <div class="chat-composer">
+        <label for="fileInput" class="attach-btn">📎</label>
+        <input id="fileInput" type="file" class="hidden" />
+        <input id="messageInput" type="text" placeholder="Написать сообщение..." />
+        <button id="sendBtn">Отправить</button>
+      </div>
     </main>
   </div>
 
   <div id="callModal" class="call-modal hidden">
     <div class="call-card">
       <div id="callTitle" class="call-title">Звонок</div>
-      <div id="callText" class="call-text">Подготовка…</div>
-      <div class="video-grid">
-        <video id="remoteVideo" autoplay playsinline></video>
-        <video id="localVideo" autoplay playsinline muted></video>
-      </div>
+      <div id="callStatus" class="call-status">Подключение...</div>
+
       <div class="call-actions">
-        <button id="acceptCallBtn" class="primary-btn hidden" type="button">Ответить</button>
-        <button id="rejectCallBtn" class="secondary-btn hidden" type="button">Отклонить</button>
-        <button id="endCallBtn" class="danger-btn hidden" type="button">Завершить</button>
+        <button id="acceptCallBtn">Принять</button>
+        <button id="rejectCallBtn" class="danger">Сбросить</button>
       </div>
-      <div class="call-note">Для звонков нужен современный браузер. На некоторых сетях может понадобиться TURN-сервер.</div>
+
+      <video id="remoteVideo" autoplay playsinline class="call-video hidden"></video>
+      <video id="localVideo" autoplay muted playsinline class="call-video small hidden"></video>
     </div>
   </div>
 
